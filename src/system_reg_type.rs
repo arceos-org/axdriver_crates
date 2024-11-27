@@ -1,3 +1,8 @@
+/// Provides implementations of formatting traits for system registers.
+///
+/// The numbering of `SystemReg` follows the order specified in the Instruction Set Specification (ISS),
+/// formatted as `<op0><op2><op1><CRn>00000<CRm>0`.
+///
 use core::fmt::{Display, Formatter, LowerHex, Result, UpperHex};
 
 /// System register type
