@@ -1,12 +1,13 @@
 //! Common traits and types for network device (NIC) drivers.
 
 #![no_std]
-#![feature(const_mut_refs)]
-#![feature(const_slice_from_raw_parts_mut)]
 
 #[cfg(feature = "ixgbe")]
 /// ixgbe NIC device driver.
 pub mod ixgbe;
+#[cfg(feature = "fxmac")]
+/// fxmac driver for PhytiumPi
+pub mod fxmac;
 mod net_buf;
 
 use core::ptr::NonNull;
