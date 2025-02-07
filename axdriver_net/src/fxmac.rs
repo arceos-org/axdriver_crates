@@ -1,18 +1,19 @@
-use alloc::boxed::Box;
-use alloc::vec::Vec;
-use alloc::collections::VecDeque;
-use core::ptr::NonNull;
-use axdriver_base::{BaseDriverOps, DevError, DevResult, DeviceType};
 use crate::{EthernetAddress, NetBufPtr, NetDriverOps};
+use alloc::boxed::Box;
+use alloc::collections::VecDeque;
+use alloc::vec::Vec;
+use axdriver_base::{BaseDriverOps, DevError, DevResult, DeviceType};
+use core::ptr::NonNull;
 
+use fxmac_rs::{self, xmac_init, FXmac, FXmacLwipPortTx, FXmacRecvHandler};
 use log::*;
-use fxmac_rs::{self, FXmac, xmac_init, FXmacLwipPortTx, FXmacRecvHandler};
 
 extern crate alloc;
 
 const QS: usize = 64;
 //const NET_BUF_LEN: usize = 1526;
 
+/// fxmac driver device
 pub struct FXmacNic {
     inner: &'static mut FXmac,
     rx_buffer_queue: VecDeque<NetBufPtr>,
@@ -22,6 +23,7 @@ unsafe impl Sync for FXmacNic {}
 unsafe impl Send for FXmacNic {}
 
 impl FXmacNic {
+    /// initialize fxmac driver
     pub fn init(mapped_regs: usize) -> DevResult<Self> {
         info!("FXmacNic init @ {:#x}", mapped_regs);
         let rx_buffer_queue = VecDeque::with_capacity(QS);
