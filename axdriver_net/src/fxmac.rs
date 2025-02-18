@@ -5,6 +5,7 @@ use alloc::vec::Vec;
 use axdriver_base::{BaseDriverOps, DevError, DevResult, DeviceType};
 use core::ptr::NonNull;
 
+pub use fxmac_rs::KernelFunc;
 use fxmac_rs::{self, xmac_init, FXmac, FXmacLwipPortTx, FXmacRecvHandler};
 use log::*;
 
@@ -92,7 +93,7 @@ impl NetDriverOps for FXmacNic {
                 None => Err(DevError::Again),
                 Some(packets) => {
                     for packet in packets {
-                        info!("received packet length {}", packet.len());
+                        debug!("received packet length {}", packet.len());
                         let mut buf = Box::new(packet);
                         let buf_ptr = buf.as_mut_ptr() as *mut u8;
                         let buf_len = buf.len();
