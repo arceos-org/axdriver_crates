@@ -4,10 +4,10 @@ use alloc::collections::VecDeque;
 use alloc::vec::Vec;
 use axdriver_base::{BaseDriverOps, DevError, DevResult, DeviceType};
 use core::ptr::NonNull;
+use fxmac_rs::{self, xmac_init, FXmac, FXmacGetMacAddress, FXmacLwipPortTx, FXmacRecvHandler};
+use log::*;
 
 pub use fxmac_rs::KernelFunc;
-use fxmac_rs::{self, xmac_init, FXmac, FXmacLwipPortTx, FXmacRecvHandler};
-use log::*;
 
 extern crate alloc;
 
@@ -17,6 +17,7 @@ const QS: usize = 64;
 /// fxmac driver device
 pub struct FXmacNic {
     inner: &'static mut FXmac,
+    hwaddr: [u8; 6],
     rx_buffer_queue: VecDeque<NetBufPtr>,
 }
 
@@ -28,11 +29,15 @@ impl FXmacNic {
     pub fn init(mapped_regs: usize) -> DevResult<Self> {
         info!("FXmacNic init @ {:#x}", mapped_regs);
         let rx_buffer_queue = VecDeque::with_capacity(QS);
-        let hwaddr: [u8; 6] = [0x98, 0x0e, 0x24, 0x00, 0x11, 0x0];
-        let inner = xmac_init(&hwaddr);
 
+        let mut hwaddr: [u8; 6] = [0; 6]; // [0x98, 0x0e, 0x24, 0x00, 0x11, 0x0];
+        FXmacGetMacAddress(&mut hwaddr, 0);
+        info!("Got FXmac HW address: {:x?}", hwaddr);
+
+        let inner = xmac_init(&hwaddr);
         let dev = Self {
             inner,
+            hwaddr,
             rx_buffer_queue,
         };
         Ok(dev)
@@ -51,7 +56,7 @@ impl BaseDriverOps for FXmacNic {
 
 impl NetDriverOps for FXmacNic {
     fn mac_address(&self) -> EthernetAddress {
-        EthernetAddress([0x98, 0x0e, 0x24, 0x00, 0x11, 0x0])
+        EthernetAddress(self.hwaddr)
     }
 
     fn rx_queue_size(&self) -> usize {
