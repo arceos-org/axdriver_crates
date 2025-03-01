@@ -1,18 +1,19 @@
-use crate::{EthernetAddress, NetBufPtr, NetDriverOps};
 use alloc::boxed::Box;
 use alloc::collections::VecDeque;
 use alloc::vec::Vec;
-use axdriver_base::{BaseDriverOps, DevError, DevResult, DeviceType};
 use core::ptr::NonNull;
+
+use axdriver_base::{BaseDriverOps, DevError, DevResult, DeviceType};
 use fxmac_rs::{self, xmac_init, FXmac, FXmacGetMacAddress, FXmacLwipPortTx, FXmacRecvHandler};
 use log::*;
+
+use crate::{EthernetAddress, NetBufPtr, NetDriverOps};
 
 pub use fxmac_rs::KernelFunc;
 
 extern crate alloc;
 
 const QS: usize = 64;
-//const NET_BUF_LEN: usize = 1526;
 
 /// fxmac driver device
 pub struct FXmacNic {
@@ -30,7 +31,7 @@ impl FXmacNic {
         info!("FXmacNic init @ {:#x}", mapped_regs);
         let rx_buffer_queue = VecDeque::with_capacity(QS);
 
-        let mut hwaddr: [u8; 6] = [0; 6]; // [0x98, 0x0e, 0x24, 0x00, 0x11, 0x0];
+        let mut hwaddr: [u8; 6] = [0; 6];
         FXmacGetMacAddress(&mut hwaddr, 0);
         info!("Got FXmac HW address: {:x?}", hwaddr);
 
@@ -72,7 +73,6 @@ impl NetDriverOps for FXmacNic {
     }
 
     fn can_transmit(&self) -> bool {
-        //!self.free_tx_bufs.is_empty()
         true
     }
 
