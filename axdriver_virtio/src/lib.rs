@@ -42,6 +42,10 @@ pub use self::blk::VirtIoBlkDev;
 pub use self::gpu::VirtIoGpuDev;
 #[cfg(feature = "net")]
 pub use self::net::VirtIoNetDev;
+#[cfg(feature = "socket")]
+mod socket;
+#[cfg(feature = "socket")]
+pub use self::socket::VirtIoSocketDev;
 use self::pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
 
 /// Try to probe a VirtIO MMIO device from the given memory region.
@@ -84,12 +88,14 @@ const fn as_dev_type(t: VirtIoDevType) -> Option<DeviceType> {
         Block => Some(DeviceType::Block),
         Network => Some(DeviceType::Net),
         GPU => Some(DeviceType::Display),
+        Socket => Some(DeviceType::Vsock),
         _ => None,
     }
 }
 
 #[allow(dead_code)]
 const fn as_dev_err(e: virtio_drivers::Error) -> DevError {
+    use virtio_drivers::device::socket::SocketError::*;
     use virtio_drivers::Error::*;
     match e {
         QueueFull => DevError::BadState,
@@ -102,6 +108,18 @@ const fn as_dev_err(e: virtio_drivers::Error) -> DevError {
         Unsupported => DevError::Unsupported,
         ConfigSpaceTooSmall => DevError::BadState,
         ConfigSpaceMissing => DevError::BadState,
-        _ => DevError::BadState,
+        SocketDeviceError(e) => match e {
+            ConnectionExists => DevError::AlreadyExists,
+            NotConnected => DevError::BadState,
+            InvalidOperation | InvalidNumber | UnknownOperation(_) => DevError::InvalidParam,
+            OutputBufferTooShort(_) | BufferTooShort | BufferTooLong(_, _) => {
+                DevError::InvalidParam
+            }
+            UnexpectedDataInPacket | PeerSocketShutdown | NoResponseReceived | ConnectionFailed => {
+                DevError::Io
+            }
+            InsufficientBufferSpaceInPeer => DevError::Again,
+            RecycledWrongBuffer => DevError::BadState,
+        },
     }
 }
