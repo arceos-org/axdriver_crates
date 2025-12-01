@@ -1,3 +1,5 @@
+//! AHCI driver.
+
 use axdriver_base::{BaseDriverOps, DevError, DevResult, DeviceType};
 use simple_ahci::{AhciDriver as SimpleAhciDriver, Hal};
 
@@ -40,6 +42,12 @@ impl<H: Hal> BlockDriverOps for AhciDriver<H> {
     }
 
     fn read_block(&mut self, block_id: u64, buf: &mut [u8]) -> DevResult {
+        if buf.len() % self.block_size() != 0 {
+            return Err(DevError::InvalidParam);
+        }
+        if buf.as_ptr() as usize % 4 != 0 {
+            return Err(DevError::InvalidParam);
+        }
         if self.0.read(block_id, buf) {
             Ok(())
         } else {
@@ -48,6 +56,12 @@ impl<H: Hal> BlockDriverOps for AhciDriver<H> {
     }
 
     fn write_block(&mut self, block_id: u64, buf: &[u8]) -> DevResult {
+        if buf.len() % self.block_size() != 0 {
+            return Err(DevError::InvalidParam);
+        }
+        if buf.as_ptr() as usize % 4 != 0 {
+            return Err(DevError::InvalidParam);
+        }
         if self.0.write(block_id, buf) {
             Ok(())
         } else {
