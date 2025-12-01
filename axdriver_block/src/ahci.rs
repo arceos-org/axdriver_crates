@@ -14,6 +14,7 @@ unsafe impl<H: Hal> Send for AhciDriver<H> {}
 unsafe impl<H: Hal> Sync for AhciDriver<H> {}
 
 impl<H: Hal> AhciDriver<H> {
+    /// Try to construct a new AHCI driver from the given physical/virtual base.
     pub fn try_new(base: usize) -> Option<Self> {
         SimpleAhciDriver::<H>::try_new(base).map(AhciDriver)
     }

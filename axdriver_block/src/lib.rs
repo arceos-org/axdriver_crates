@@ -13,8 +13,10 @@ pub mod ramdisk;
 pub mod ramdisk_static;
 
 #[cfg(feature = "ahci")]
+/// AHCI driver.
 pub mod ahci;
 #[cfg(feature = "sdmmc")]
+/// SD/MMC driver.
 pub mod sdmmc;
 
 #[doc(no_inline)]
