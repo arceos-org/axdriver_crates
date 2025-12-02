@@ -8,13 +8,6 @@ use crate::BlockDriverOps;
 /// AHCI driver based on the `simple_ahci` crate.
 pub struct AhciDriver<H: Hal>(SimpleAhciDriver<H>);
 
-/// Safety:
-/// - `Send`: The driver takes ownership of the MMIO region and can be safely moved between threads.
-/// - `Sync`: The driver's mutating operations require `&mut self`, ensuring exclusive access.
-///   Read-only operations (like getting block size) are safe to perform concurrently.
-unsafe impl<H: Hal> Send for AhciDriver<H> {}
-unsafe impl<H: Hal> Sync for AhciDriver<H> {}
-
 impl<H: Hal> AhciDriver<H> {
     /// Try to construct a new AHCI driver from the given MMIO base address.
     ///
