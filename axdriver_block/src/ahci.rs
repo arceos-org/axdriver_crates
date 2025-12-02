@@ -16,7 +16,15 @@ unsafe impl<H: Hal> Send for AhciDriver<H> {}
 unsafe impl<H: Hal> Sync for AhciDriver<H> {}
 
 impl<H: Hal> AhciDriver<H> {
-    /// Try to construct a new AHCI driver from the given physical/virtual base.
+    /// Try to construct a new AHCI driver from the given MMIO base address.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure that:
+    /// - `base` is a valid virtual address pointing to the AHCI controller's MMIO register block.
+    /// - The memory region starting at `base` is properly mapped and accessible.
+    /// - No other code is concurrently accessing the same AHCI controller.
+    /// - The AHCI controller hardware is present and functional at the given address.
     pub fn try_new(base: usize) -> Option<Self> {
         SimpleAhciDriver::<H>::try_new(base).map(AhciDriver)
     }
