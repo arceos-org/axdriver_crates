@@ -6,7 +6,7 @@ use simple_ahci::{AhciDriver as SimpleAhciDriver, Hal};
 use crate::BlockDriverOps;
 
 /// AHCI driver based on the `simple_ahci` crate.
-pub struct AhciDriver<H: Hal>(pub SimpleAhciDriver<H>);
+pub struct AhciDriver<H: Hal>(SimpleAhciDriver<H>);
 
 /// Safety:
 /// - `Send`: The driver takes ownership of the MMIO region and can be safely moved between threads.
