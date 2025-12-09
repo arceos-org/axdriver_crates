@@ -1,9 +1,10 @@
 //! AHCI driver.
 
-use crate::BlockDriverOps;
 use axdriver_base::{BaseDriverOps, DevError, DevResult, DeviceType};
 use simple_ahci::AhciDriver as SimpleAhciDriver;
-pub use simple_ahci::Hal;
+pub use simple_ahci::Hal as AhciHal;
+
+use crate::BlockDriverOps;
 
 /// AHCI driver based on the `simple_ahci` crate.
 pub struct AhciDriver<H: Hal>(SimpleAhciDriver<H>);
