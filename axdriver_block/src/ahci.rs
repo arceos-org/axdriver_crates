@@ -7,9 +7,9 @@ pub use simple_ahci::Hal as AhciHal;
 use crate::BlockDriverOps;
 
 /// AHCI driver based on the `simple_ahci` crate.
-pub struct AhciDriver<H: Hal>(SimpleAhciDriver<H>);
+pub struct AhciDriver<H: AhciHal>(SimpleAhciDriver<H>);
 
-impl<H: Hal> AhciDriver<H> {
+impl<H: AhciHal> AhciDriver<H> {
     /// Try to construct a new AHCI driver from the given MMIO base address.
     ///
     /// # Safety
@@ -24,7 +24,7 @@ impl<H: Hal> AhciDriver<H> {
     }
 }
 
-impl<H: Hal> BaseDriverOps for AhciDriver<H> {
+impl<H: AhciHal> BaseDriverOps for AhciDriver<H> {
     fn device_name(&self) -> &str {
         "ahci"
     }
@@ -34,7 +34,7 @@ impl<H: Hal> BaseDriverOps for AhciDriver<H> {
     }
 }
 
-impl<H: Hal> BlockDriverOps for AhciDriver<H> {
+impl<H: AhciHal> BlockDriverOps for AhciDriver<H> {
     fn block_size(&self) -> usize {
         self.0.block_size()
     }
