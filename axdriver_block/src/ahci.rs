@@ -1,8 +1,8 @@
 //! AHCI driver.
 
 use axdriver_base::{BaseDriverOps, DevError, DevResult, DeviceType};
-use simple_ahci::{AhciDriver as SimpleAhciDriver, Hal};
-
+pub use simple_ahci::Hal;
+use simple_ahci::AhciDriver as SimpleAhciDriver;
 use crate::BlockDriverOps;
 
 /// AHCI driver based on the `simple_ahci` crate.
