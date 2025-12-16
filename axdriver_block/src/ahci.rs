@@ -47,9 +47,10 @@ impl<H: AhciHal> BlockDriverOps for AhciDriver<H> {
         if buf.len() % self.block_size() != 0 {
             return Err(DevError::InvalidParam);
         }
-        if buf.as_ptr() as usize % 4 != 0 {
-            return Err(DevError::InvalidParam);
-        }
+        // if buf.as_ptr() as usize % 2 != 0 {
+        //     log::error!("read_block: invalid buffer alignment {:p},len:{}", buf.as_ptr(),buf.len());
+        //     return Err(DevError::InvalidParam);
+        // }
         if self.0.read(block_id, buf) {
             Ok(())
         } else {
@@ -61,9 +62,10 @@ impl<H: AhciHal> BlockDriverOps for AhciDriver<H> {
         if buf.len() % self.block_size() != 0 {
             return Err(DevError::InvalidParam);
         }
-        if buf.as_ptr() as usize % 4 != 0 {
-            return Err(DevError::InvalidParam);
-        }
+        // if buf.as_ptr() as usize % 2 != 0 {
+        //     log::error!("write_block: invalid buffer alignment {:p},len:{}", buf.as_ptr(),buf.len());
+        //     return Err(DevError::InvalidParam);
+        // }
         if self.0.write(block_id, buf) {
             Ok(())
         } else {
