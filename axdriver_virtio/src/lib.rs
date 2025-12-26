@@ -28,16 +28,20 @@ pub use self::gpu::VirtIoGpuDev;
 
 #[cfg(feature = "net")]
 mod net;
-#[cfg(feature = "net")]
-pub use self::net::VirtIoNetDev;
-
-pub use virtio_drivers::transport::pci::bus as pci;
-pub use virtio_drivers::transport::{mmio::MmioTransport, pci::PciTransport, Transport};
-pub use virtio_drivers::{BufferDirection, Hal as VirtIoHal, PhysAddr};
-
-use self::pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
 use axdriver_base::{DevError, DeviceType};
 use virtio_drivers::transport::DeviceType as VirtIoDevType;
+pub use virtio_drivers::{
+    BufferDirection, Hal as VirtIoHal, PhysAddr,
+    transport::{
+        Transport,
+        mmio::MmioTransport,
+        pci::{PciTransport, bus as pci},
+    },
+};
+
+#[cfg(feature = "net")]
+pub use self::net::VirtIoNetDev;
+use self::pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
 
 /// Try to probe a VirtIO MMIO device from the given memory region.
 ///
@@ -48,6 +52,7 @@ pub fn probe_mmio_device(
     _reg_size: usize,
 ) -> Option<(DeviceType, MmioTransport)> {
     use core::ptr::NonNull;
+
     use virtio_drivers::transport::mmio::VirtIOHeader;
 
     let header = NonNull::new(reg_base as *mut VirtIOHeader).unwrap();
