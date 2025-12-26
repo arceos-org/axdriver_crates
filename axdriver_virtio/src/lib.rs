@@ -18,16 +18,13 @@ extern crate alloc;
 
 #[cfg(feature = "block")]
 mod blk;
-#[cfg(feature = "block")]
-pub use self::blk::VirtIoBlkDev;
 
 #[cfg(feature = "gpu")]
 mod gpu;
-#[cfg(feature = "gpu")]
-pub use self::gpu::VirtIoGpuDev;
 
 #[cfg(feature = "net")]
 mod net;
+
 use axdriver_base::{DevError, DeviceType};
 use virtio_drivers::transport::DeviceType as VirtIoDevType;
 pub use virtio_drivers::{
@@ -39,6 +36,10 @@ pub use virtio_drivers::{
     },
 };
 
+#[cfg(feature = "block")]
+pub use self::blk::VirtIoBlkDev;
+#[cfg(feature = "gpu")]
+pub use self::gpu::VirtIoGpuDev;
 #[cfg(feature = "net")]
 pub use self::net::VirtIoNetDev;
 use self::pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
