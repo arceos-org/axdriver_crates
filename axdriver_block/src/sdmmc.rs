@@ -17,7 +17,7 @@ impl SdMmcDriver {
     /// controller's register block and that no other code is concurrently
     /// accessing the same hardware.
     pub unsafe fn new(base: usize) -> Self {
-        Self(SdMmc::new(base))
+        Self(unsafe { SdMmc::new(base) })
     }
 }
 
@@ -49,7 +49,7 @@ impl BlockDriverOps for SdMmcDriver {
         }
 
         // check if block id exceeds device capacity
-        if block_id.saturating_add(blocks.len() as u64) > self.0.num_blocks(){
+        if block_id.saturating_add(blocks.len() as u64) > self.0.num_blocks() {
             return Err(DevError::InvalidParam);
         }
 
@@ -70,7 +70,7 @@ impl BlockDriverOps for SdMmcDriver {
         }
 
         // check if block id exceeds device capacity
-        if block_id.saturating_add(blocks.len() as u64) > self.0.num_blocks(){
+        if block_id.saturating_add(blocks.len() as u64) > self.0.num_blocks() {
             return Err(DevError::InvalidParam);
         }
 
