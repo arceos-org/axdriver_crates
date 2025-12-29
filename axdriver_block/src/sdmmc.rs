@@ -42,17 +42,18 @@ impl BlockDriverOps for SdMmcDriver {
 
     fn read_block(&mut self, block_id: u64, buf: &mut [u8]) -> DevResult {
         let (blocks, remainder) = buf.as_chunks_mut::<{ SdMmc::BLOCK_SIZE }>();
-        let block_id: u32 = block_id.try_into().map_err(|_| DevError::InvalidParam)?;
 
+        // the buf length must be a multiple of block size
         if !remainder.is_empty() {
             return Err(DevError::InvalidParam);
         }
 
-        // check that block_id + blocks.len() does not overflow u32
-        if block_id.checked_add(blocks.len() as u32).is_none() {
+        // check if block id exceeds device capacity
+        if block_id.saturating_add(blocks.len() as u64) > self.0.num_blocks(){
             return Err(DevError::InvalidParam);
         }
 
+        let block_id: u32 = block_id.try_into().map_err(|_| DevError::InvalidParam)?;
         for (i, block) in blocks.iter_mut().enumerate() {
             self.0.read_block(block_id + i as u32, block);
         }
@@ -62,17 +63,18 @@ impl BlockDriverOps for SdMmcDriver {
 
     fn write_block(&mut self, block_id: u64, buf: &[u8]) -> DevResult {
         let (blocks, remainder) = buf.as_chunks::<{ SdMmc::BLOCK_SIZE }>();
-        let block_id: u32 = block_id.try_into().map_err(|_| DevError::InvalidParam)?;
 
+        // the buf length must be a multiple of block size
         if !remainder.is_empty() {
             return Err(DevError::InvalidParam);
         }
 
-        // check that block_id + blocks.len() does not overflow u32
-        if block_id.checked_add(blocks.len() as u32).is_none() {
+        // check if block id exceeds device capacity
+        if block_id.saturating_add(blocks.len() as u64) > self.0.num_blocks(){
             return Err(DevError::InvalidParam);
         }
 
+        let block_id: u32 = block_id.try_into().map_err(|_| DevError::InvalidParam)?;
         for (i, block) in blocks.iter().enumerate() {
             self.0.write_block(block_id + i as u32, block);
         }
