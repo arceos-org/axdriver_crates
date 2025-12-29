@@ -133,8 +133,9 @@ fn convert_vsock_event<H: Hal, T: Transport>(
         VsockEventType::ConnectionRequest => Ok(VsockDriverEvent::ConnectionRequest(cid)),
         VsockEventType::Connected => Ok(VsockDriverEvent::Connected(cid)),
         VsockEventType::Received { length } => {
+            let slice_len = length.min(buf.len());
             let read = inner
-                .recv(event.source, event.destination.port, &mut buf[..length])
+                .recv(event.source, event.destination.port, &mut buf[..slice_len])
                 .map_err(as_dev_err)?;
             Ok(VsockDriverEvent::Received(cid, read))
         }
