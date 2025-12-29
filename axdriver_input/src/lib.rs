@@ -76,7 +76,7 @@ pub struct AbsInfo {
     pub res: u32,
 }
 
-/// Operations that require a input device driver to implement.
+/// Operations that require an input device driver to implement.
 pub trait InputDriverOps: BaseDriverOps {
     /// Returns the device ID of the input device.
     fn device_id(&self) -> InputDeviceId;
