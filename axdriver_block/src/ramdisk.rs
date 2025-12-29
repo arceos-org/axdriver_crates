@@ -15,9 +15,11 @@ use crate::BlockDriverOps;
 
 const BLOCK_SIZE: usize = 512;
 
-/// A RAM disk backed by heap memory.
+/// A RAM disk driver.
 pub enum RamDisk {
+    /// A RAM disk backed by heap memory.
     Heap(NonNull<[u8]>),
+    /// A RAM disk backed by a static slice.
     Static(&'static mut [u8]),
 }
 
