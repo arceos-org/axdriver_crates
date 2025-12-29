@@ -16,4 +16,3 @@ default = []
 
 [dependencies]
 axdriver_base = { workspace = true }
-log = "0.4"
