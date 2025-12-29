@@ -1,4 +1,4 @@
-//! Common traits and types for socket communite device drivers (i.e. disk).
+//! Common traits and types for socket communication device drivers.
 
 #![no_std]
 #![cfg_attr(doc, feature(doc_cfg))]
@@ -45,11 +45,11 @@ pub enum VsockDriverEvent {
     Received(VsockConnId, usize),
     /// Disconnected
     Disconnected(VsockConnId),
-    /// unknown event
+    /// Unknown event
     Unknown,
 }
 
-/// Operations that require a block storage device driver to implement.
+/// Operations that require a virtual socket device driver to implement.
 pub trait VsockDriverOps: BaseDriverOps {
     /// guest cid
     fn guest_cid(&self) -> u64;
@@ -79,6 +79,6 @@ pub trait VsockDriverOps: BaseDriverOps {
     /// Forcibly closes the connection without waiting for the peer.
     fn abort(&mut self, cid: VsockConnId) -> DevResult<()>;
 
-    /// poll event from driver
+    /// Poll event from driver.
     fn poll_event(&mut self, buf: &mut [u8]) -> DevResult<Option<VsockDriverEvent>>;
 }
