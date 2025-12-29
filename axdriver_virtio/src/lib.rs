@@ -44,9 +44,9 @@ pub use self::gpu::VirtIoGpuDev;
 pub use self::net::VirtIoNetDev;
 #[cfg(feature = "socket")]
 mod socket;
+use self::pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
 #[cfg(feature = "socket")]
 pub use self::socket::VirtIoSocketDev;
-use self::pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
 
 /// Try to probe a VirtIO MMIO device from the given memory region.
 ///
@@ -95,8 +95,7 @@ const fn as_dev_type(t: VirtIoDevType) -> Option<DeviceType> {
 
 #[allow(dead_code)]
 const fn as_dev_err(e: virtio_drivers::Error) -> DevError {
-    use virtio_drivers::device::socket::SocketError::*;
-    use virtio_drivers::Error::*;
+    use virtio_drivers::{Error::*, device::socket::SocketError::*};
     match e {
         QueueFull => DevError::BadState,
         NotReady => DevError::Again,
@@ -112,9 +111,7 @@ const fn as_dev_err(e: virtio_drivers::Error) -> DevError {
             ConnectionExists => DevError::AlreadyExists,
             NotConnected => DevError::BadState,
             InvalidOperation | InvalidNumber | UnknownOperation(_) => DevError::InvalidParam,
-            OutputBufferTooShort(_) | BufferTooShort | BufferTooLong(_, _) => {
-                DevError::InvalidParam
-            }
+            OutputBufferTooShort(_) | BufferTooShort | BufferTooLong(..) => DevError::InvalidParam,
             UnexpectedDataInPacket | PeerSocketShutdown | NoResponseReceived | ConnectionFailed => {
                 DevError::Io
             }
