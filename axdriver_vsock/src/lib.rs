@@ -66,13 +66,14 @@ pub trait VsockDriverOps: BaseDriverOps {
     /// Receive data from the connected peer socket.
     fn recv(&mut self, cid: VsockConnId, buf: &mut [u8]) -> DevResult<usize>;
 
-    /// Returns the number of bytes in the receive buffer available to be read by recv.
+    /// Returns the number of bytes in the receive buffer available to be read
+    /// by recv.
     fn recv_avail(&mut self, cid: VsockConnId) -> DevResult<usize>;
 
     /// Disconnect from the connected peer socket.
     ///
-    /// Requests to shut down the connection cleanly, telling the peer that we won't send or receive
-    /// any more data.
+    /// Requests to shut down the connection cleanly, telling the peer that we
+    /// won't send or receive any more data.
     fn disconnect(&mut self, cid: VsockConnId) -> DevResult<()>;
 
     /// Forcibly closes the connection without waiting for the peer.
