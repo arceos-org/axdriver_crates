@@ -126,9 +126,12 @@ impl BlockDriverOps for RamDisk {
         if buf.len() % BLOCK_SIZE != 0 {
             return Err(DevError::InvalidParam);
         }
-        let offset = block_id as usize * BLOCK_SIZE;
-        if offset + buf.len() > self.len() {
-            return Err(DevError::Io);
+        let block_id: usize = block_id.try_into().map_err(|_| DevError::InvalidParam)?;
+        let offset = block_id
+            .checked_mul(BLOCK_SIZE)
+            .ok_or(DevError::InvalidParam)?;
+        if offset.saturating_add(buf.len()) > self.len() {
+            return Err(DevError::InvalidParam);
         }
         buf.copy_from_slice(&self[offset..offset + buf.len()]);
         Ok(())
@@ -138,9 +141,12 @@ impl BlockDriverOps for RamDisk {
         if buf.len() % BLOCK_SIZE != 0 {
             return Err(DevError::InvalidParam);
         }
-        let offset = block_id as usize * BLOCK_SIZE;
-        if offset + buf.len() > self.len() {
-            return Err(DevError::Io);
+        let block_id: usize = block_id.try_into().map_err(|_| DevError::InvalidParam)?;
+        let offset = block_id
+            .checked_mul(BLOCK_SIZE)
+            .ok_or(DevError::InvalidParam)?;
+        if offset.saturating_add(buf.len()) > self.len() {
+            return Err(DevError::InvalidParam);
         }
         self[offset..offset + buf.len()].copy_from_slice(buf);
         Ok(())
