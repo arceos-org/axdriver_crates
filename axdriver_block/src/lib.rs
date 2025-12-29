@@ -9,9 +9,6 @@ pub mod bcm2835sdhci;
 #[cfg(feature = "ramdisk")]
 pub mod ramdisk;
 
-#[cfg(feature = "ramdisk-static")]
-pub mod ramdisk_static;
-
 #[doc(no_inline)]
 pub use axdriver_base::{BaseDriverOps, DevError, DevResult, DeviceType};
 

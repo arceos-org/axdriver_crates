@@ -1,4 +1,4 @@
-//! A RAM disk driver backed by heap memory.
+//! A RAM disk driver backed by heap memory or static slice.
 
 extern crate alloc;
 
@@ -16,14 +16,17 @@ use crate::BlockDriverOps;
 const BLOCK_SIZE: usize = 512;
 
 /// A RAM disk backed by heap memory.
-pub struct RamDisk(NonNull<[u8]>);
+pub enum RamDisk {
+    Heap(NonNull<[u8]>),
+    Static(&'static mut [u8]),
+}
 
 unsafe impl Send for RamDisk {}
 unsafe impl Sync for RamDisk {}
 
 impl Default for RamDisk {
     fn default() -> Self {
-        Self(NonNull::<[u8; 0]>::dangling())
+        Self::Heap(NonNull::<[u8; 0]>::dangling())
     }
 }
 
@@ -32,27 +35,40 @@ impl RamDisk {
     ///
     /// The actual size of the RAM disk will be aligned upwards to the block
     /// size (512 bytes).
-    pub fn new(size_hint: usize) -> Self {
+    pub fn new_heap(size_hint: usize) -> Self {
         let size = align_up(size_hint);
         let ptr = unsafe {
             NonNull::new_unchecked(alloc_zeroed(Layout::from_size_align_unchecked(
                 size, BLOCK_SIZE,
             )))
         };
-        Self(NonNull::slice_from_raw_parts(ptr, size))
+        Self::Heap(NonNull::slice_from_raw_parts(ptr, size))
+    }
+
+    /// Creates a new RAM disk from the given static buffer.
+    ///
+    /// # Panics
+    /// Panics if the buffer is not aligned to block size or its size is not
+    /// a multiple of block size.
+    pub fn new_static(buf: &'static mut [u8]) -> Self {
+        assert_eq!(buf.as_ptr().addr() & (BLOCK_SIZE - 1), 0);
+        assert_eq!(buf.len() % BLOCK_SIZE, 0);
+        Self::Static(buf)
     }
 }
 
 impl Drop for RamDisk {
     fn drop(&mut self) {
-        if self.0.is_empty() {
-            return;
-        }
-        unsafe {
-            dealloc(
-                self.0.cast::<u8>().as_ptr(),
-                Layout::from_size_align_unchecked(self.0.len(), BLOCK_SIZE),
-            );
+        if let RamDisk::Heap(ptr) = self {
+            if ptr.is_empty() {
+                return;
+            }
+            unsafe {
+                dealloc(
+                    ptr.cast::<u8>().as_ptr(),
+                    Layout::from_size_align_unchecked(ptr.len(), BLOCK_SIZE),
+                )
+            }
         }
     }
 }
@@ -61,19 +77,25 @@ impl Deref for RamDisk {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        unsafe { self.0.as_ref() }
+        match self {
+            RamDisk::Heap(ptr) => unsafe { ptr.as_ref() },
+            RamDisk::Static(slice) => slice,
+        }
     }
 }
 
 impl DerefMut for RamDisk {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { self.0.as_mut() }
+        match self {
+            RamDisk::Heap(ptr) => unsafe { ptr.as_mut() },
+            RamDisk::Static(slice) => slice,
+        }
     }
 }
 
 impl From<&[u8]> for RamDisk {
     fn from(data: &[u8]) -> Self {
-        let mut this = RamDisk::new(data.len());
+        let mut this = RamDisk::new_heap(data.len());
         this[..data.len()].copy_from_slice(data);
         this
     }
