@@ -104,12 +104,12 @@ impl From<&[u8]> for RamDisk {
 }
 
 impl BaseDriverOps for RamDisk {
-    fn device_type(&self) -> DeviceType {
-        DeviceType::Block
-    }
-
     fn device_name(&self) -> &str {
         "ramdisk"
+    }
+
+    fn device_type(&self) -> DeviceType {
+        DeviceType::Block
     }
 }
 
