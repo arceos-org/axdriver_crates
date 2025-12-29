@@ -74,7 +74,7 @@ impl BlockDriverOps for SdMmcDriver {
         }
 
         for (i, block) in blocks.iter().enumerate() {
-            self.0.write_block(block_id as u32 + i as u32, block);
+            self.0.write_block(block_id + i as u32, block);
         }
 
         Ok(())
