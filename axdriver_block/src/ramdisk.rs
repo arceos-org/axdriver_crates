@@ -27,17 +27,18 @@ unsafe impl Send for RamDisk {}
 unsafe impl Sync for RamDisk {}
 
 impl Default for RamDisk {
+    /// Creates a default RAM disk with zero size.
     fn default() -> Self {
         Self::Heap(NonNull::<[u8; 0]>::dangling())
     }
 }
 
 impl RamDisk {
-    /// Creates a new RAM disk with the given size hint.
+    /// Creates a new RAM disk with the given size hint, allocated on the heap.
     ///
     /// The actual size of the RAM disk will be aligned upwards to the block
     /// size (512 bytes).
-    pub fn new_heap(size_hint: usize) -> Self {
+    pub fn new(size_hint: usize) -> Self {
         let size = align_up(size_hint);
         let ptr = unsafe {
             NonNull::new_unchecked(alloc_zeroed(Layout::from_size_align_unchecked(
@@ -47,15 +48,23 @@ impl RamDisk {
         Self::Heap(NonNull::slice_from_raw_parts(ptr, size))
     }
 
-    /// Creates a new RAM disk from the given static buffer.
+    /// Creates a new RAM disk from the given static buffer. This will not
+    /// allocate any memory.
     ///
     /// # Panics
     /// Panics if the buffer is not aligned to block size or its size is not
     /// a multiple of block size.
-    pub fn new_static(buf: &'static mut [u8]) -> Self {
+    pub fn from_static(buf: &'static mut [u8]) -> Self {
         assert_eq!(buf.as_ptr().addr() & (BLOCK_SIZE - 1), 0);
         assert_eq!(buf.len() % BLOCK_SIZE, 0);
         Self::Static(buf)
+    }
+
+    /// Creates a new RAM disk from the given slice, by copying it.
+    pub fn copy_from_slice(data: &[u8]) -> Self {
+        let mut this = RamDisk::new(data.len());
+        this[..data.len()].copy_from_slice(data);
+        this
     }
 }
 
@@ -95,11 +104,10 @@ impl DerefMut for RamDisk {
     }
 }
 
-impl From<&[u8]> for RamDisk {
-    fn from(data: &[u8]) -> Self {
-        let mut this = RamDisk::new_heap(data.len());
-        this[..data.len()].copy_from_slice(data);
-        this
+impl From<&'static mut [u8]> for RamDisk {
+    /// Creates a RAM disk from a static mutable slice without copying.
+    fn from(data: &'static mut [u8]) -> Self {
+        RamDisk::from_static(data)
     }
 }
 
