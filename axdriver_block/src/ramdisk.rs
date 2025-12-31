@@ -75,10 +75,9 @@ impl RamDisk {
 
 impl Drop for RamDisk {
     fn drop(&mut self) {
-        if let RamDisk::Heap(ptr) = self {
-            if ptr.is_empty() {
-                return;
-            }
+        if let RamDisk::Heap(ptr) = self
+            && !ptr.is_empty()
+        {
             unsafe {
                 dealloc(
                     ptr.cast::<u8>().as_ptr(),
