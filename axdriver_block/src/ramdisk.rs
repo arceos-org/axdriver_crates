@@ -40,6 +40,10 @@ impl RamDisk {
     /// size (512 bytes).
     pub fn new(size_hint: usize) -> Self {
         let size = align_up(size_hint);
+        if size == 0 {
+            return Self::default();
+        }
+        // SAFETY: size > 0
         let ptr = unsafe {
             NonNull::new(alloc_zeroed(
                 Layout::from_size_align(size, BLOCK_SIZE).unwrap(),
