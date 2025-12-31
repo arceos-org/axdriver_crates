@@ -41,9 +41,10 @@ impl RamDisk {
     pub fn new(size_hint: usize) -> Self {
         let size = align_up(size_hint);
         let ptr = unsafe {
-            NonNull::new_unchecked(alloc_zeroed(Layout::from_size_align_unchecked(
-                size, BLOCK_SIZE,
-            )))
+            NonNull::new(alloc_zeroed(
+                Layout::from_size_align(size, BLOCK_SIZE).unwrap(),
+            ))
+            .unwrap()
         };
         Self::Heap(NonNull::slice_from_raw_parts(ptr, size))
     }
@@ -77,7 +78,7 @@ impl Drop for RamDisk {
             unsafe {
                 dealloc(
                     ptr.cast::<u8>().as_ptr(),
-                    Layout::from_size_align_unchecked(ptr.len(), BLOCK_SIZE),
+                    Layout::from_size_align(ptr.len(), BLOCK_SIZE).unwrap(),
                 )
             }
         }
