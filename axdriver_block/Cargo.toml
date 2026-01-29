@@ -13,6 +13,7 @@ categories.workspace = true
 readme = "README.md"
 
 [features]
+cvsd = ["dep:sg200x-bsp"]
 ramdisk = []
 ramdisk-static = []
 sdmmc = ["dep:simple-sdmmc"]
@@ -22,6 +23,7 @@ bcm2835-sdhci = ["dep:bcm2835-sdhci"]
 [dependencies]
 axdriver_base = { version = "0.1.4-preview.3" }
 log = { workspace = true }
+sg200x-bsp = { git = "https://github.com/yfblock/sg200x-bsp", optional = true }
 simple-sdmmc = { version = "0.1", optional = true }
 simple-ahci = { version = "0.1.1-preview.1", optional = true }
 bcm2835-sdhci = { version = "0.1.1-preview.1", optional = true }
