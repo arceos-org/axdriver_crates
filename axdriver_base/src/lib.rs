@@ -27,6 +27,8 @@ pub enum DeviceType {
     Net,
     /// Graphic display device (e.g., GPU)
     Display,
+    /// Vsock device (e.g., virtio-vsock).
+    Vsock,
 }
 
 /// The error type for device operation failures.
