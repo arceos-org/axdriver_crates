@@ -24,6 +24,8 @@ pub struct PciConfigAccess {
     cam: Cam,
 }
 
+// SAFETY: PciConfigAccess is used like PciRoot: the raw pointer points to a
+// static MMIO mapping that is valid for the lifetime of the program.
 unsafe impl Send for PciConfigAccess {}
 unsafe impl Sync for PciConfigAccess {}
 
@@ -60,13 +62,20 @@ impl PciConfigAccess {
     /// Reads a 32-bit word from PCI configuration space.
     pub fn read_word(&self, device_function: DeviceFunction, register_offset: u8) -> u32 {
         let address = self.cam_offset(device_function, register_offset);
+        // SAFETY: The pointer arithmetic stays within the MMIO window because
+        // cam_offset() produces offsets bounded by Cam::size().
         unsafe { self.mmio_base.add((address >> 2) as usize).read_volatile() }
     }
 
     /// Writes a 32-bit word to PCI configuration space.
     pub fn write_word(&mut self, device_function: DeviceFunction, register_offset: u8, data: u32) {
         let address = self.cam_offset(device_function, register_offset);
-        unsafe { self.mmio_base.add((address >> 2) as usize).write_volatile(data) }
+        // SAFETY: Same as read_word.
+        unsafe {
+            self.mmio_base
+                .add((address >> 2) as usize)
+                .write_volatile(data)
+        }
     }
 }
 
