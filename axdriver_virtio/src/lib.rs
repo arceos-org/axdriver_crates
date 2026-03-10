@@ -26,6 +26,7 @@ mod gpu;
 mod net;
 
 use axdriver_base::{DevError, DeviceType};
+use axdriver_pci::PciConfigAccess;
 use virtio_drivers::transport::DeviceType as VirtIoDevType;
 pub use virtio_drivers::{
     BufferDirection, Hal as VirtIoHal, PhysAddr,
@@ -70,12 +71,37 @@ pub fn probe_pci_device<H: VirtIoHal>(
     root: &mut PciRoot,
     bdf: DeviceFunction,
     dev_info: &DeviceFunctionInfo,
-) -> Option<(DeviceType, PciTransport)> {
+    config: &PciConfigAccess,
+) -> Option<(DeviceType, PciTransport, usize)> {
     use virtio_drivers::transport::pci::virtio_device_type;
 
     let dev_type = virtio_device_type(dev_info).and_then(as_dev_type)?;
     let transport = PciTransport::new::<H>(root, bdf).ok()?;
-    Some((dev_type, transport))
+    #[cfg(target_arch = "x86_64")]
+    let irq = legacy_irq_for_bdf(config, bdf);
+    #[cfg(target_arch = "riscv64")]
+    let irq = 0x20 + (bdf.device & 3) as usize;
+    #[cfg(target_arch = "loongarch64")]
+    let irq = 0x10 + (bdf.device & 3) as usize;
+    #[cfg(target_arch = "aarch64")]
+    let irq = 0x23 + (bdf.device & 3) as usize;
+
+    #[cfg(target_arch = "x86_64")]
+    if irq == 0 || irq == 0xff {
+        log::warn!(
+            "PCI device {:?}: Interrupt Line not assigned ({:#x})",
+            bdf,
+            irq
+        );
+        return None;
+    }
+
+    Some((dev_type, transport, irq))
+}
+
+#[cfg(target_arch = "x86_64")]
+fn legacy_irq_for_bdf(config: &PciConfigAccess, bdf: DeviceFunction) -> usize {
+    (config.read_word(bdf, 0x3c) & 0xff) as usize
 }
 
 const fn as_dev_type(t: VirtIoDevType) -> Option<DeviceType> {
