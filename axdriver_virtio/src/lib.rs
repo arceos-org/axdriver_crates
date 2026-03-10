@@ -47,6 +47,7 @@ pub use virtio_drivers::{BufferDirection, Hal as VirtIoHal, PhysAddr};
 
 use self::pci::{ConfigurationAccess, DeviceFunction, DeviceFunctionInfo, PciRoot};
 use axdriver_base::{DevError, DeviceType};
+use axdriver_pci::PciConfigAccess;
 use virtio_drivers::transport::DeviceType as VirtIoDevType;
 
 /// Try to probe a VirtIO MMIO device from the given memory region.
@@ -74,22 +75,37 @@ pub fn probe_pci_device<H: VirtIoHal, C: ConfigurationAccess>(
     root: &mut PciRoot<C>,
     bdf: DeviceFunction,
     dev_info: &DeviceFunctionInfo,
+    config: &PciConfigAccess,
 ) -> Option<(DeviceType, PciTransport, usize)> {
     use virtio_drivers::transport::pci::virtio_device_type;
 
-    #[cfg(target_arch = "x86_64")]
-    const PCI_IRQ_BASE: usize = 0x20;
-    #[cfg(target_arch = "riscv64")]
-    const PCI_IRQ_BASE: usize = 0x20;
-    #[cfg(target_arch = "loongarch64")]
-    const PCI_IRQ_BASE: usize = 0x10;
-    #[cfg(target_arch = "aarch64")]
-    const PCI_IRQ_BASE: usize = 0x23;
-
     let dev_type = virtio_device_type(dev_info).and_then(as_dev_type)?;
-    let transport = PciTransport::new::<H, C>(root, bdf).ok()?;
-    let irq = PCI_IRQ_BASE + (bdf.device & 3) as usize;
+    let transport = PciTransport::new::<H>(root, bdf).ok()?;
+    #[cfg(target_arch = "x86_64")]
+    let irq = legacy_irq_for_bdf(config, bdf);
+    #[cfg(target_arch = "riscv64")]
+    let irq = 0x20 + (bdf.device & 3) as usize;
+    #[cfg(target_arch = "loongarch64")]
+    let irq = 0x10 + (bdf.device & 3) as usize;
+    #[cfg(target_arch = "aarch64")]
+    let irq = 0x23 + (bdf.device & 3) as usize;
+
+    #[cfg(target_arch = "x86_64")]
+    if irq == 0 || irq == 0xff {
+        log::warn!(
+            "PCI device {:?}: Interrupt Line not assigned ({:#x})",
+            bdf,
+            irq
+        );
+        return None;
+    }
+
     Some((dev_type, transport, irq))
+}
+
+#[cfg(target_arch = "x86_64")]
+fn legacy_irq_for_bdf(config: &PciConfigAccess, bdf: DeviceFunction) -> usize {
+    (config.read_word(bdf, 0x3c) & 0xff) as usize
 }
 
 const fn as_dev_type(t: VirtIoDevType) -> Option<DeviceType> {

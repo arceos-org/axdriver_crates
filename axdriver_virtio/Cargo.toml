@@ -26,6 +26,7 @@ axdriver_block = { version = "0.1.4-preview.3", optional = true }
 axdriver_display = { version = "0.1.4-preview.3", optional = true }
 axdriver_input = { version = "0.1.4-preview.3", optional = true }
 axdriver_net = { version = "0.1.4-preview.3", optional = true }
+axdriver_pci = { version = "0.1.4-preview.3" }
 axdriver_vsock = { version = "0.1.4-preview.3", optional = true }
 log = { workspace = true }
 virtio-drivers = { workspace = true }
