@@ -75,20 +75,29 @@ pub fn probe_pci_device<H: VirtIoHal>(
     root: &mut PciRoot,
     bdf: DeviceFunction,
     dev_info: &DeviceFunctionInfo,
-    config: &PciConfigAccess,
+    config: &mut PciConfigAccess,
 ) -> Option<(DeviceType, PciTransport, usize)> {
     use virtio_drivers::transport::pci::virtio_device_type;
 
     let dev_type = virtio_device_type(dev_info).and_then(as_dev_type)?;
-    let transport = PciTransport::new::<H>(root, bdf).ok()?;
     #[cfg(target_arch = "x86_64")]
-    let irq = legacy_irq_for_bdf(config, bdf);
-    #[cfg(target_arch = "riscv64")]
-    let irq = 0x20 + (bdf.device & 3) as usize;
-    #[cfg(target_arch = "loongarch64")]
-    let irq = 0x10 + (bdf.device & 3) as usize;
-    #[cfg(target_arch = "aarch64")]
-    let irq = 0x23 + (bdf.device & 3) as usize;
+    let irq = {
+        legacy_irq_for_bdf(config, bdf)
+    };
+
+    #[cfg(not(target_arch = "x86_64"))]
+    let irq = {
+        let _ = &config; // not used on non-x86_64 platforms
+        #[cfg(target_arch = "loongarch64")]
+        const PCI_IRQ_BASE: usize = 0x10;
+        #[cfg(target_arch = "aarch64")]
+        const PCI_IRQ_BASE: usize = 0x23;
+        #[cfg(target_arch = "riscv64")]
+        const PCI_IRQ_BASE: usize = 0x20;
+        PCI_IRQ_BASE + (bdf.device & 3) as usize
+    };
+
+    let transport = PciTransport::new::<H>(root, bdf).ok()?;
 
     #[cfg(target_arch = "x86_64")]
     if irq == 0 || irq == 0xff {
@@ -103,9 +112,16 @@ pub fn probe_pci_device<H: VirtIoHal>(
     Some((dev_type, transport, irq))
 }
 
+/// Reads the PCI Interrupt Line register (config space offset 0x3C) for the
+/// given device and returns it as a legacy IRQ number.
+///
+/// Returns 0xFF if the register has not been programmed by firmware, which
+/// means the device has no usable legacy IRQ assignment. The caller should
+/// treat 0xFF as "no IRQ".
 #[cfg(target_arch = "x86_64")]
 fn legacy_irq_for_bdf(config: &PciConfigAccess, bdf: DeviceFunction) -> usize {
-    (config.read_word(bdf, 0x3c) & 0xff) as usize
+    let word = config.read_word(bdf, 0x3C);
+    (word & 0xFF) as usize
 }
 
 const fn as_dev_type(t: VirtIoDevType) -> Option<DeviceType> {
