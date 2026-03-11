@@ -81,9 +81,7 @@ pub fn probe_pci_device<H: VirtIoHal, C: ConfigurationAccess>(
 
     let dev_type = virtio_device_type(dev_info).and_then(as_dev_type)?;
     #[cfg(target_arch = "x86_64")]
-    let irq = {
-        legacy_irq_for_bdf(config, bdf)
-    };
+    let irq = { legacy_irq_for_bdf(config, bdf) };
 
     #[cfg(not(target_arch = "x86_64"))]
     let irq = {
