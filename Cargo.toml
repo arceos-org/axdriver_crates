@@ -43,6 +43,7 @@ axdriver_base = { path = "axdriver_base" }
 axdriver_block = { path = "axdriver_block" }
 axdriver_display = { path = "axdriver_display" }
 axdriver_net = { path = "axdriver_net" }
+axdriver_pci = { path = "axdriver_pci" }
 axdriver_virtio = { path = "axdriver_virtio" }
 axdriver_input = { path = "axdriver_input" }
 axdriver_vsock = { path = "axdriver_vsock" }
