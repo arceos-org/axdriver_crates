@@ -25,6 +25,16 @@ mod gpu;
 #[cfg(feature = "net")]
 mod net;
 
+#[cfg(feature = "socket")]
+mod socket;
+#[cfg(feature = "socket")]
+pub use self::socket::VirtIoSocketDev;
+
+pub use virtio_drivers::transport::pci::bus as pci;
+pub use virtio_drivers::transport::{mmio::MmioTransport, pci::PciTransport, Transport};
+pub use virtio_drivers::{BufferDirection, Hal as VirtIoHal, PhysAddr};
+
+use self::pci::{ConfigurationAccess, DeviceFunction, DeviceFunctionInfo, PciRoot};
 use axdriver_base::{DevError, DeviceType};
 use virtio_drivers::transport::DeviceType as VirtIoDevType;
 pub use virtio_drivers::{
@@ -50,14 +60,14 @@ use self::pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
 /// for later operations. Otherwise, returns [`None`].
 pub fn probe_mmio_device(
     reg_base: *mut u8,
-    _reg_size: usize,
-) -> Option<(DeviceType, MmioTransport)> {
+    reg_size: usize,
+) -> Option<(DeviceType, MmioTransport<'static>)> {
     use core::ptr::NonNull;
 
     use virtio_drivers::transport::mmio::VirtIOHeader;
 
     let header = NonNull::new(reg_base as *mut VirtIOHeader).unwrap();
-    let transport = unsafe { MmioTransport::new(header) }.ok()?;
+    let transport = unsafe { MmioTransport::new(header, reg_size) }.ok()?;
     let dev_type = as_dev_type(transport.device_type())?;
     Some((dev_type, transport))
 }
@@ -66,16 +76,17 @@ pub fn probe_mmio_device(
 ///
 /// If the device is recognized, returns the device type and a transport object
 /// for later operations. Otherwise, returns [`None`].
-pub fn probe_pci_device<H: VirtIoHal>(
-    root: &mut PciRoot,
+pub fn probe_pci_device<H: VirtIoHal, C: ConfigurationAccess>(
+    root: &mut PciRoot<C>,
     bdf: DeviceFunction,
     dev_info: &DeviceFunctionInfo,
 ) -> Option<(DeviceType, PciTransport)> {
     use virtio_drivers::transport::pci::virtio_device_type;
 
     let dev_type = virtio_device_type(dev_info).and_then(as_dev_type)?;
-    let transport = PciTransport::new::<H>(root, bdf).ok()?;
-    Some((dev_type, transport))
+    let transport = PciTransport::new::<H, C>(root, bdf).ok()?;
+    let irq = PCI_IRQ_BASE + (bdf.device & 3) as usize;
+    Some((dev_type, transport, irq))
 }
 
 const fn as_dev_type(t: VirtIoDevType) -> Option<DeviceType> {
@@ -102,6 +113,18 @@ const fn as_dev_err(e: virtio_drivers::Error) -> DevError {
         Unsupported => DevError::Unsupported,
         ConfigSpaceTooSmall => DevError::BadState,
         ConfigSpaceMissing => DevError::BadState,
-        _ => DevError::BadState,
+        SocketDeviceError(e) => match e {
+            ConnectionExists => DevError::AlreadyExists,
+            NotConnected => DevError::BadState,
+            InvalidOperation | InvalidNumber | UnknownOperation(_) => DevError::InvalidParam,
+            OutputBufferTooShort(_) | BufferTooShort | BufferTooLong(_, _) => {
+                DevError::InvalidParam
+            }
+            UnexpectedDataInPacket | PeerSocketShutdown => {
+                DevError::Io
+            }
+            InsufficientBufferSpaceInPeer => DevError::Again,
+            RecycledWrongBuffer => DevError::BadState,
+        },
     }
 }
