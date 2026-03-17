@@ -13,4 +13,4 @@ categories.workspace = true
 readme = "README.md"
 
 [dependencies]
-virtio-drivers = "0.7.4"
+virtio-drivers = { workspace = true }
