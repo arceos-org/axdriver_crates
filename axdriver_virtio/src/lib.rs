@@ -25,16 +25,6 @@ mod gpu;
 #[cfg(feature = "net")]
 mod net;
 
-#[cfg(feature = "socket")]
-mod socket;
-#[cfg(feature = "socket")]
-pub use self::socket::VirtIoSocketDev;
-
-pub use virtio_drivers::transport::pci::bus as pci;
-pub use virtio_drivers::transport::{mmio::MmioTransport, pci::PciTransport, Transport};
-pub use virtio_drivers::{BufferDirection, Hal as VirtIoHal, PhysAddr};
-
-use self::pci::{ConfigurationAccess, DeviceFunction, DeviceFunctionInfo, PciRoot};
 use axdriver_base::{DevError, DeviceType};
 use virtio_drivers::transport::DeviceType as VirtIoDevType;
 pub use virtio_drivers::{
@@ -52,7 +42,7 @@ pub use self::blk::VirtIoBlkDev;
 pub use self::gpu::VirtIoGpuDev;
 #[cfg(feature = "net")]
 pub use self::net::VirtIoNetDev;
-use self::pci::{DeviceFunction, DeviceFunctionInfo, PciRoot};
+use self::pci::{ConfigurationAccess, DeviceFunction, DeviceFunctionInfo, PciRoot};
 
 /// Try to probe a VirtIO MMIO device from the given memory region.
 ///
@@ -80,8 +70,17 @@ pub fn probe_pci_device<H: VirtIoHal, C: ConfigurationAccess>(
     root: &mut PciRoot<C>,
     bdf: DeviceFunction,
     dev_info: &DeviceFunctionInfo,
-) -> Option<(DeviceType, PciTransport)> {
+) -> Option<(DeviceType, PciTransport, usize)> {
     use virtio_drivers::transport::pci::virtio_device_type;
+
+    #[cfg(target_arch = "x86_64")]
+    const PCI_IRQ_BASE: usize = 0x20;
+    #[cfg(target_arch = "riscv64")]
+    const PCI_IRQ_BASE: usize = 0x20;
+    #[cfg(target_arch = "loongarch64")]
+    const PCI_IRQ_BASE: usize = 0x10;
+    #[cfg(target_arch = "aarch64")]
+    const PCI_IRQ_BASE: usize = 0x23;
 
     let dev_type = virtio_device_type(dev_info).and_then(as_dev_type)?;
     let transport = PciTransport::new::<H, C>(root, bdf).ok()?;
@@ -113,16 +112,20 @@ const fn as_dev_err(e: virtio_drivers::Error) -> DevError {
         Unsupported => DevError::Unsupported,
         ConfigSpaceTooSmall => DevError::BadState,
         ConfigSpaceMissing => DevError::BadState,
-        SocketDeviceError(e) => match e {
-            ConnectionExists => DevError::AlreadyExists,
-            NotConnected => DevError::BadState,
-            InvalidOperation | InvalidNumber | UnknownOperation(_) => DevError::InvalidParam,
-            OutputBufferTooShort(_) | BufferTooShort | BufferTooLong(_, _) => {
-                DevError::InvalidParam
-            }
-            UnexpectedDataInPacket | PeerSocketShutdown => DevError::Io,
-            InsufficientBufferSpaceInPeer => DevError::Again,
-            RecycledWrongBuffer => DevError::BadState,
-        },
+        SocketDeviceError(e) => socket_error_to_dev_error(e),
+    }
+}
+
+#[allow(dead_code)]
+const fn socket_error_to_dev_error(e: virtio_drivers::device::socket::SocketError) -> DevError {
+    use virtio_drivers::device::socket::SocketError::*;
+    match e {
+        ConnectionExists => DevError::AlreadyExists,
+        NotConnected => DevError::BadState,
+        InvalidOperation | InvalidNumber | UnknownOperation(_) => DevError::InvalidParam,
+        OutputBufferTooShort(_) | BufferTooShort | BufferTooLong(..) => DevError::InvalidParam,
+        UnexpectedDataInPacket | PeerSocketShutdown => DevError::Io,
+        InsufficientBufferSpaceInPeer => DevError::Again,
+        RecycledWrongBuffer => DevError::BadState,
     }
 }
