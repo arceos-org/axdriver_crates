@@ -60,7 +60,7 @@ pub fn probe_mmio_device(
     use core::ptr::NonNull;
     use virtio_drivers::transport::mmio::VirtIOHeader;
 
-    let header = NonNull::new(reg_base as *mut VirtIOHeader).unwrap();
+    let header = NonNull::new(reg_base as *mut VirtIOHeader)?;
     let transport = unsafe { MmioTransport::new(header, reg_size) }.ok()?;
     let dev_type = as_dev_type(transport.device_type())?;
     Some((dev_type, transport))
@@ -126,9 +126,7 @@ const fn as_dev_err(e: virtio_drivers::Error) -> DevError {
             OutputBufferTooShort(_) | BufferTooShort | BufferTooLong(_, _) => {
                 DevError::InvalidParam
             }
-            UnexpectedDataInPacket | PeerSocketShutdown => {
-                DevError::Io
-            }
+            UnexpectedDataInPacket | PeerSocketShutdown => DevError::Io,
             InsufficientBufferSpaceInPeer => DevError::Again,
             RecycledWrongBuffer => DevError::BadState,
         },

@@ -9,10 +9,8 @@
 #![no_std]
 
 pub use virtio_drivers::transport::pci::bus::{
-    BarInfo, Cam, ConfigurationAccess, HeaderType, MemoryBarType, MmioCam, PciError,
-};
-pub use virtio_drivers::transport::pci::bus::{
-    CapabilityInfo, Command, DeviceFunction, DeviceFunctionInfo, PciRoot, Status,
+    BarInfo, Cam, CapabilityInfo, Command, ConfigurationAccess, DeviceFunction, DeviceFunctionInfo,
+    HeaderType, MemoryBarType, MmioCam, PciError, PciRoot, Status,
 };
 
 /// Used to allocate MMIO regions for PCI BARs.

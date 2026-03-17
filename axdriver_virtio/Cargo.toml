@@ -28,4 +28,4 @@ axdriver_input = { version = "0.1.4-preview.3", optional = true }
 axdriver_net = { version = "0.1.4-preview.3", optional = true }
 axdriver_vsock = { version = "0.1.4-preview.3", optional = true }
 log = { workspace = true }
-virtio-drivers = { version = "0.12.0", default-features = false }
+virtio-drivers = { workspace = true }
