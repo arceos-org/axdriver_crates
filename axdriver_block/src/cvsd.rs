@@ -13,8 +13,9 @@ unsafe impl Sync for CvsdDriver {}
 
 impl CvsdDriver {
     /// Initializes SD/MMC and creates a new [`CvsdDriver`].
-    pub fn new() -> DevResult<Self> {
-        let sdmmc = sg200x_bsp::sdmmc::init().map_err(|_| DevError::Io)?;
+    pub fn new(sdmmc: usize, syscon: usize) -> DevResult<Self> {
+        let sdmmc = unsafe{ Sdmmc::from_base_addresses(sdmmc, syscon) };
+        sdmmc.init().map_err(|_| DevError::Io)?;
         sdmmc.clk_en(true);
         Ok(Self(sdmmc))
     }
