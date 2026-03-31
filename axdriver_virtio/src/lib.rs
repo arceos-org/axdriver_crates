@@ -72,7 +72,6 @@ pub fn probe_mmio_device(
 /// for later operations. Otherwise, returns [`None`].
 pub fn probe_pci_device<H: VirtIoHal, C: ConfigurationAccess>(
     root: &mut PciRoot<C>,
-    config: &C,
     bdf: DeviceFunction,
     dev_info: &DeviceFunctionInfo,
 ) -> Option<(DeviceType, PciTransport, usize)> {
@@ -80,11 +79,10 @@ pub fn probe_pci_device<H: VirtIoHal, C: ConfigurationAccess>(
 
     let dev_type = virtio_device_type(dev_info).and_then(as_dev_type)?;
     #[cfg(target_arch = "x86_64")]
-    let irq = legacy_irq_for_bdf(config, bdf);
+    let irq = legacy_irq_for_bdf(&root.configuration_access, bdf);
 
     #[cfg(not(target_arch = "x86_64"))]
     let irq = {
-        let _ = config; // not used on non-x86_64 platforms
         #[cfg(target_arch = "loongarch64")]
         const PCI_IRQ_BASE: usize = 0x10;
         #[cfg(target_arch = "aarch64")]
@@ -116,6 +114,7 @@ pub fn probe_pci_device<H: VirtIoHal, C: ConfigurationAccess>(
 /// means the device has no usable legacy IRQ assignment. The caller should
 /// treat 0xFF as "no IRQ".
 #[cfg(target_arch = "x86_64")]
+#[inline]
 fn legacy_irq_for_bdf<C: ConfigurationAccess>(config: &C, bdf: DeviceFunction) -> usize {
     let word = config.read_word(bdf, 0x3C);
     (word & 0xFF) as usize
