@@ -77,21 +77,38 @@ pub fn probe_pci_device<H: VirtIoHal, C: ConfigurationAccess>(
 ) -> Option<(DeviceType, PciTransport, usize)> {
     use virtio_drivers::transport::pci::virtio_device_type;
 
-    #[cfg(target_arch = "x86_64")]
-    const PCI_IRQ_BASE: usize = 0x20;
-    #[cfg(target_arch = "riscv64")]
-    const PCI_IRQ_BASE: usize = 0x20;
-    #[cfg(target_arch = "loongarch64")]
-    const PCI_IRQ_BASE: usize = 0x10;
-    #[cfg(target_arch = "aarch64")]
-    const PCI_IRQ_BASE: usize = 0x23;
-
     let dev_type = virtio_device_type(dev_info).and_then(as_dev_type)?;
+    #[cfg(target_arch = "x86_64")]
+    let irq = {
+        let word = root.configuration_access.read_word(bdf, 0x3C);
+        (word & 0xFF) as usize
+    };
+
+    #[cfg(not(target_arch = "x86_64"))]
+    let irq = {
+        #[cfg(target_arch = "loongarch64")]
+        const PCI_IRQ_BASE: usize = 0x10;
+        #[cfg(target_arch = "aarch64")]
+        const PCI_IRQ_BASE: usize = 0x23;
+        #[cfg(target_arch = "riscv64")]
+        const PCI_IRQ_BASE: usize = 0x20;
+        PCI_IRQ_BASE + (bdf.device & 3) as usize
+    };
+
     let transport = PciTransport::new::<H, C>(root, bdf).ok()?;
-    let irq = PCI_IRQ_BASE + (bdf.device & 3) as usize;
+
+    #[cfg(target_arch = "x86_64")]
+    if irq == 0 || irq == 0xff {
+        log::warn!(
+            "PCI device {:?}: Interrupt Line not assigned ({:#x})",
+            bdf,
+            irq
+        );
+        return None;
+    }
+
     Some((dev_type, transport, irq))
 }
-
 const fn as_dev_type(t: VirtIoDevType) -> Option<DeviceType> {
     use VirtIoDevType::*;
     match t {
