@@ -79,7 +79,10 @@ pub fn probe_pci_device<H: VirtIoHal, C: ConfigurationAccess>(
 
     let dev_type = virtio_device_type(dev_info).and_then(as_dev_type)?;
     #[cfg(target_arch = "x86_64")]
-    let irq = legacy_irq_for_bdf(&root.configuration_access, bdf);
+    let irq = {
+        let word = root.configuration_access.read_word(bdf, 0x3C);
+        (word & 0xFF) as usize
+    };
 
     #[cfg(not(target_arch = "x86_64"))]
     let irq = {
@@ -106,20 +109,6 @@ pub fn probe_pci_device<H: VirtIoHal, C: ConfigurationAccess>(
 
     Some((dev_type, transport, irq))
 }
-
-/// Reads the PCI Interrupt Line register (config space offset 0x3C) for the
-/// given device and returns it as a legacy IRQ number.
-///
-/// Returns 0xFF if the register has not been programmed by firmware, which
-/// means the device has no usable legacy IRQ assignment. The caller should
-/// treat 0xFF as "no IRQ".
-#[cfg(target_arch = "x86_64")]
-#[inline]
-fn legacy_irq_for_bdf<C: ConfigurationAccess>(config: &C, bdf: DeviceFunction) -> usize {
-    let word = config.read_word(bdf, 0x3C);
-    (word & 0xFF) as usize
-}
-
 const fn as_dev_type(t: VirtIoDevType) -> Option<DeviceType> {
     use VirtIoDevType::*;
     match t {
