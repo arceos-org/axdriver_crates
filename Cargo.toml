@@ -11,7 +11,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.4"
+version = "0.2.0"
 edition = "2024"
 authors = ["Yuekai Jia <equation618@gmail.com>"]
 license = "GPL-3.0-or-later OR Apache-2.0 OR MulanPSL-2.0"
@@ -22,10 +22,10 @@ categories = ["os", "no-std", "hardware-support"]
 
 [workspace.dependencies]
 log = "0.4"
-axdriver_base = { path = "axdriver_base", version = "0.1" }
-axdriver_block = { path = "axdriver_block", version = "0.1" }
-axdriver_display = { path = "axdriver_display", version = "0.1" }
-axdriver_net = { path = "axdriver_net", version = "0.1" }
-axdriver_pci = { path = "axdriver_pci", version = "0.1" }
-axdriver_virtio = { path = "axdriver_virtio", version = "0.1" }
+axdriver_base = { path = "axdriver_base", version = "0.2" }
+axdriver_block = { path = "axdriver_block", version = "0.2" }
+axdriver_display = { path = "axdriver_display", version = "0.2" }
+axdriver_net = { path = "axdriver_net", version = "0.2" }
+axdriver_pci = { path = "axdriver_pci", version = "0.2" }
+axdriver_virtio = { path = "axdriver_virtio", version = "0.2" }
 virtio-drivers = { version = "0.13", default-features = false }
